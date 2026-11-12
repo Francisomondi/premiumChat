@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { env } from "../config/env.js";
@@ -53,6 +52,17 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
+    dateOfBirth: {
+      type: Date,
+      default: null,
+      select: false,
+    },
+
+    ageVerifiedAt: {
+      type: Date,
+      default: null,
+    },
+
     emailVerifiedAt: {
       type: Date,
       default: null,
@@ -68,7 +78,6 @@ const userSchema = new mongoose.Schema(
     versionKey: false,
   },
 );
-
 
 userSchema.pre("save", async function () {
   if (!this.isModified("passwordHash")) {

@@ -1,10 +1,10 @@
-
 import { create } from "zustand";
 
 import {
   registerUser,
   loginUser,
   getCurrentUser,
+  verifyUserAge,
   logoutUser,
 } from "../api/services/authService";
 
@@ -16,7 +16,7 @@ const useAuthStore = create((set, get) => ({
   error: null,
 
   initializeAuth: async () => {
-    if (get().isInitialized) return;
+    if (get().isInitialized || get().isLoading) return;
 
     set({ isLoading: true, error: null });
 
@@ -89,13 +89,41 @@ const useAuthStore = create((set, get) => ({
     }
   },
 
+  verifyAge: async (dateOfBirth) => {
+    set({ isLoading: true, error: null });
+
+    try {
+      const response = await verifyUserAge({ dateOfBirth });
+
+      set({
+        user: response.data.user,
+        isAuthenticated: true,
+        isInitialized: true,
+        isLoading: false,
+        error: null,
+      });
+
+      return { success: true };
+    } catch (error) {
+      const message =
+        error.response?.data?.message ||
+        "Age verification failed. Please try again.";
+
+      set({
+        error: message,
+        isLoading: false,
+      });
+
+      return { success: false, message };
+    }
+  },
+
   logout: async () => {
     set({ isLoading: true, error: null });
 
     try {
       await logoutUser();
     } catch (error) {
-      // Keep the local session state intact if logout fails.
       set({
         error:
           error.response?.data?.message ||

@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
 
@@ -6,6 +5,7 @@ import {
   register,
   login,
   getCurrentUser,
+  verifyAge,
   logout,
 } from "../controllers/auth.controller.js";
 
@@ -25,6 +25,17 @@ const authLimiter = rateLimit({
   },
 });
 
+const ageVerificationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many age verification attempts. Please try again later.",
+  },
+});
+
 router.post(
   "/register",
   requireTrustedOrigin,
@@ -40,6 +51,14 @@ router.post(
 );
 
 router.get("/me", requireAuth, getCurrentUser);
+
+router.post(
+  "/verify-age",
+  requireTrustedOrigin,
+  requireAuth,
+  ageVerificationLimiter,
+  verifyAge,
+);
 
 router.post(
   "/logout",

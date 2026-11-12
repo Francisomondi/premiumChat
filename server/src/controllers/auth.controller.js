@@ -1,7 +1,7 @@
-
 import {
   registerUser,
   loginUser,
+  verifyUserAge,
   formatUser,
   revokeSession,
   getSessionCookieName,
@@ -11,6 +11,7 @@ import {
 import {
   registerSchema,
   loginSchema,
+  verifyAgeSchema,
 } from "../validators/auth.validator.js";
 
 function validatePasswordBytes(password) {
@@ -104,6 +105,33 @@ export async function getCurrentUser(req, res) {
       user: formatUser(req.user),
     },
   });
+}
+
+export async function verifyAge(req, res, next) {
+  try {
+    const result = verifyAgeSchema.safeParse(req.body);
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid date of birth.",
+        errors: result.error.flatten().fieldErrors,
+      });
+    }
+
+    const user = await verifyUserAge(
+      req.user._id,
+      result.data.dateOfBirth,
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Your age has been verified successfully.",
+      data: { user },
+    });
+  } catch (error) {
+    return next(error);
+  }
 }
 
 export async function logout(req, res, next) {

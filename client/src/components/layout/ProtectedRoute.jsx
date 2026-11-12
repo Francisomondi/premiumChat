@@ -1,12 +1,11 @@
-
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import useAuthStore from "../../store/useAuthStore";
 
 function ProtectedRoute() {
+  const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore(
     (state) => state.isAuthenticated,
   );
-
   const isInitialized = useAuthStore(
     (state) => state.isInitialized,
   );
@@ -30,6 +29,26 @@ function ProtectedRoute() {
       />
     );
   }
+
+  if (user?.role === "FAN") {
+    if (!user.ageVerified && location.pathname !== "/verify-age") {
+      return <Navigate to="/verify-age" replace />;
+    }
+
+    if (
+      user.ageVerified &&
+      ["/verify-age", "/dashboard"].includes(location.pathname)
+    ) {
+      return <Navigate to="/explore" replace />;
+    }
+  }
+
+  if (
+  user?.role !== "FAN" &&
+  location.pathname === "/explore"
+) {
+  return <Navigate to="/dashboard" replace />;
+}
 
   return <Outlet />;
 }

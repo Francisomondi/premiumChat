@@ -1,4 +1,3 @@
-
 import axiosInstance from "../axiosInstance";
 
 export async function registerUser(payload) {
@@ -13,6 +12,15 @@ export async function loginUser(payload) {
 
 export async function getCurrentUser() {
   const response = await axiosInstance.get("/auth/me");
+  return response.data;
+}
+
+export async function verifyUserAge(payload) {
+  const response = await axiosInstance.post(
+    "/auth/verify-age",
+    payload,
+  );
+
   return response.data;
 }
 

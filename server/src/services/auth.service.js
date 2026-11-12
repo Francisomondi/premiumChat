@@ -1,4 +1,3 @@
-
 import crypto from "node:crypto";
 
 import User, {
@@ -20,6 +19,29 @@ function hashToken(token) {
 
 function createSessionToken() {
   return crypto.randomBytes(32).toString("base64url");
+}
+
+function calculateAge(dateOfBirth) {
+  const today = new Date();
+
+  const todayYear = today.getUTCFullYear();
+  const todayMonth = today.getUTCMonth() + 1;
+  const todayDay = today.getUTCDate();
+
+  const birthYear = dateOfBirth.getUTCFullYear();
+  const birthMonth = dateOfBirth.getUTCMonth() + 1;
+  const birthDay = dateOfBirth.getUTCDate();
+
+  let age = todayYear - birthYear;
+
+  if (
+    todayMonth < birthMonth ||
+    (todayMonth === birthMonth && todayDay < birthDay)
+  ) {
+    age -= 1;
+  }
+
+  return age;
 }
 
 export function getSessionCookieOptions() {
@@ -44,6 +66,8 @@ export function formatUser(user) {
     role: user.role,
     status: user.status,
     emailVerified: Boolean(user.emailVerifiedAt),
+    ageVerified: Boolean(user.ageVerifiedAt),
+    ageVerifiedAt: user.ageVerifiedAt || null,
     createdAt: user.createdAt,
   };
 }
@@ -119,6 +143,40 @@ export async function loginUser({ email, password, request }) {
     user: formatUser(user),
     token: session.token,
   };
+}
+
+export async function verifyUserAge(userId, dateOfBirth) {
+  const user = await User.findById(userId);
+
+  if (!user || user.status !== USER_STATUSES.ACTIVE) {
+    const error = new Error("Your account could not be verified.");
+    error.status = 404;
+    throw error;
+  }
+
+  if (user.ageVerifiedAt) {
+    const error = new Error("Your age has already been verified.");
+    error.status = 409;
+    throw error;
+  }
+
+  const birthDate = new Date(`${dateOfBirth}T00:00:00.000Z`);
+
+  if (calculateAge(birthDate) < 18) {
+    const error = new Error(
+      "You must be at least 18 years old to use this platform.",
+    );
+
+    error.status = 403;
+    throw error;
+  }
+
+  user.dateOfBirth = birthDate;
+  user.ageVerifiedAt = new Date();
+
+  await user.save();
+
+  return formatUser(user);
 }
 
 async function createUserSession(user, request) {
