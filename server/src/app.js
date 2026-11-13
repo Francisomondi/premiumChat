@@ -9,6 +9,7 @@ import { env } from "./config/env.js";
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import creatorRoutes from "./routes/creator.routes.js";
+import mediaRoutes from "./routes/media.routes.js";
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.get("/", (req, res) => {
 app.use("/api/health", healthRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/creators", creatorRoutes);
+app.use("/api/media", mediaRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
