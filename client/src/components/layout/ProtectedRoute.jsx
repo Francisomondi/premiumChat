@@ -1,11 +1,18 @@
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import {
+  Navigate,
+  Outlet,
+  useLocation,
+} from "react-router-dom";
+
 import useAuthStore from "../../store/useAuthStore";
 
 function ProtectedRoute() {
   const user = useAuthStore((state) => state.user);
+
   const isAuthenticated = useAuthStore(
     (state) => state.isAuthenticated,
   );
+
   const isInitialized = useAuthStore(
     (state) => state.isInitialized,
   );
@@ -30,25 +37,45 @@ function ProtectedRoute() {
     );
   }
 
-  if (user?.role === "FAN") {
-    if (!user.ageVerified && location.pathname !== "/verify-age") {
-      return <Navigate to="/verify-age" replace />;
-    }
+  const role = user?.role;
+  const path = location.pathname;
 
+  // Both fans and creators must verify their age.
+  if (
+    ["FAN", "CREATOR"].includes(role) &&
+    !user?.ageVerified &&
+    path !== "/verify-age"
+  ) {
+    return <Navigate to="/verify-age" replace />;
+  }
+
+  // A verified fan belongs in creator discovery.
+  if (role === "FAN") {
     if (
       user.ageVerified &&
-      ["/verify-age", "/dashboard"].includes(location.pathname)
+      ["/verify-age", "/dashboard", "/creator"].includes(path)
     ) {
       return <Navigate to="/explore" replace />;
     }
   }
 
+  // Creators use the creator portal, not fan discovery.
+  if (role === "CREATOR") {
+    if (
+      user.ageVerified &&
+      ["/verify-age", "/dashboard", "/explore"].includes(path)
+    ) {
+      return <Navigate to="/creator" replace />;
+    }
+  }
+
+  // Admin accounts use the admin/dashboard area.
   if (
-  user?.role !== "FAN" &&
-  location.pathname === "/explore"
-) {
-  return <Navigate to="/dashboard" replace />;
-}
+    role === "ADMIN" &&
+    ["/verify-age", "/explore", "/creator"].includes(path)
+  ) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return <Outlet />;
 }

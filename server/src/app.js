@@ -1,4 +1,3 @@
-
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -6,8 +5,10 @@ import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 
 import { env } from "./config/env.js";
+
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import creatorRoutes from "./routes/creator.routes.js";
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/health", healthRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/creators", creatorRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
@@ -60,9 +62,19 @@ app.use((err, req, res, next) => {
   }
 
   if (err.code === 11000) {
+    const duplicatedField = Object.keys(err.keyPattern || {})[0];
+
+    const messages = {
+      email: "An account with this email already exists.",
+      username: "That creator username is already taken.",
+      userId: "A creator profile already exists for this account.",
+    };
+
     return res.status(409).json({
       success: false,
-      message: "An account with this email already exists.",
+      message:
+        messages[duplicatedField] ||
+        "A record with this information already exists.",
     });
   }
 
