@@ -56,6 +56,10 @@ function getR2Client() {
       accessKeyId: env.R2_ACCESS_KEY_ID,
       secretAccessKey: env.R2_SECRET_ACCESS_KEY,
     },
+
+    // Avoid automatically adding CRC32 checksum parameters
+    // to presigned browser uploads.
+    requestChecksumCalculation: "WHEN_REQUIRED",
   });
 
   return r2Client;
@@ -80,13 +84,27 @@ export async function createVideoUploadUrl({
     },
   });
 
-  const uploadUrl = await getSignedUrl(
+    const uploadUrl = await getSignedUrl(
     getR2Client(),
     command,
     {
-      expiresIn: 600,
+        expiresIn: 600,
+
+        // Keep metadata as HTTP headers instead of moving
+        // them into the signed URL query parameters.
+        unhoistableHeaders: new Set([
+        "x-amz-meta-owner-id",
+        "x-amz-meta-media-id",
+        ]),
+
+        // Explicitly include these headers in the signature.
+        signableHeaders: new Set([
+        "content-type",
+        "x-amz-meta-owner-id",
+        "x-amz-meta-media-id",
+        ]),
     },
-  );
+    );
 
   return {
     uploadUrl,
