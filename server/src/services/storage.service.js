@@ -2,10 +2,15 @@
 import {
   S3Client,
   PutObjectCommand,
+  GetObjectCommand,
   HeadObjectCommand,
 } from "@aws-sdk/client-s3";
 
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+import { createWriteStream, createReadStream } from "node:fs";
+import { stat } from "node:fs/promises";
+import { pipeline } from "node:stream/promises";
 
 import { env } from "../config/env.js";
 
@@ -57,8 +62,6 @@ function getR2Client() {
       secretAccessKey: env.R2_SECRET_ACCESS_KEY,
     },
 
-    // Avoid automatically adding CRC32 checksum parameters
-    // to presigned browser uploads.
     requestChecksumCalculation: "WHEN_REQUIRED",
   });
 
@@ -84,27 +87,24 @@ export async function createVideoUploadUrl({
     },
   });
 
-    const uploadUrl = await getSignedUrl(
+  const uploadUrl = await getSignedUrl(
     getR2Client(),
     command,
     {
-        expiresIn: 600,
+      expiresIn: 600,
 
-        // Keep metadata as HTTP headers instead of moving
-        // them into the signed URL query parameters.
-        unhoistableHeaders: new Set([
+      unhoistableHeaders: new Set([
         "x-amz-meta-owner-id",
         "x-amz-meta-media-id",
-        ]),
+      ]),
 
-        // Explicitly include these headers in the signature.
-        signableHeaders: new Set([
+      signableHeaders: new Set([
         "content-type",
         "x-amz-meta-owner-id",
         "x-amz-meta-media-id",
-        ]),
+      ]),
     },
-    );
+  );
 
   return {
     uploadUrl,
@@ -126,4 +126,60 @@ export async function getPrivateObjectMetadata(storageKey) {
   });
 
   return getR2Client().send(command);
+}
+
+export async function downloadPrivateObject(
+  storageKey,
+  destinationPath,
+) {
+  const { bucket } = getR2Config();
+
+  const command = new GetObjectCommand({
+    Bucket: bucket,
+    Key: storageKey,
+  });
+
+  const response = await getR2Client().send(command);
+
+  if (!response.Body) {
+    throw new Error("The private storage object has no content.");
+  }
+
+  await pipeline(
+    response.Body,
+    createWriteStream(destinationPath),
+  );
+
+  return {
+    sizeBytes: response.ContentLength || null,
+    contentType: response.ContentType || null,
+  };
+}
+
+export async function uploadPrivateFile({
+  storageKey,
+  filePath,
+  contentType,
+  metadata = {},
+}) {
+  const { bucket } = getR2Config();
+
+  const fileStats = await stat(filePath);
+
+  const command = new PutObjectCommand({
+    Bucket: bucket,
+    Key: storageKey,
+    Body: createReadStream(filePath),
+    ContentLength: fileStats.size,
+    ContentType: contentType,
+    Metadata: metadata,
+  });
+
+  await getR2Client().send(command);
+
+  return {
+    storageKey,
+    sizeBytes: fileStats.size,
+    contentType,
+  };
 }

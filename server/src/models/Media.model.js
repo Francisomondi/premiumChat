@@ -88,6 +88,44 @@ const mediaSchema = new mongoose.Schema(
       select: false,
     },
 
+    // Private processed video and thumbnail objects.
+    processedStorageKey: {
+      type: String,
+      default: null,
+      select: false,
+    },
+
+    thumbnailStorageKey: {
+      type: String,
+      default: null,
+      select: false,
+    },
+
+    // Processing output metadata.
+    durationSeconds: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
+
+    width: {
+      type: Number,
+      min: 1,
+      default: null,
+    },
+
+    height: {
+      type: Number,
+      min: 1,
+      default: null,
+    },
+
+    processedSizeBytes: {
+      type: Number,
+      min: 1,
+      default: null,
+    },
+
     status: {
       type: String,
       enum: Object.values(MEDIA_STATUSES),
@@ -139,6 +177,33 @@ const mediaSchema = new mongoose.Schema(
       default: null,
     },
 
+    processingCompletedAt: {
+      type: Date,
+      default: null,
+    },
+
+    processingAttempts: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    processingLeaseOwner: {
+      type: String,
+      default: null,
+    },
+
+    processingLeaseExpiresAt: {
+      type: Date,
+      default: null,
+    },
+
+    processingError: {
+      type: String,
+      default: "",
+      maxlength: 1000,
+    },
+
     publishedAt: {
       type: Date,
       default: null,
@@ -157,6 +222,13 @@ const mediaSchema = new mongoose.Schema(
 );
 
 mediaSchema.index({ creatorId: 1, createdAt: -1 });
+
+mediaSchema.index({
+  status: 1,
+  processingLeaseExpiresAt: 1,
+  processingAttempts: 1,
+});
+
 mediaSchema.index({
   status: 1,
   moderationStatus: 1,
