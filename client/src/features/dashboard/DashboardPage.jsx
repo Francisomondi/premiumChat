@@ -6,6 +6,7 @@ import {
   getCreatorApplications,
   reviewCreatorApplication,
 } from "../../api/services/adminService";
+import MediaModerationPanel from "./MediaModerationPanel";
 
 const PAGE_SIZE = 20;
 
@@ -599,6 +600,8 @@ function AdminDashboard({ user, onLogout, isLoading }) {
             </div>
           )}
         </section>
+
+        <MediaModerationPanel />
 
         <section className="mt-12">
           <h3 className="text-xl font-bold">More administration modules</h3>

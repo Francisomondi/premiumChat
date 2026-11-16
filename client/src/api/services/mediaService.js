@@ -3,6 +3,11 @@ import axiosInstance from "../axiosInstance";
 
 const MAX_VIDEO_SIZE = 200 * 1024 * 1024;
 
+export async function getCreatorMedia() {
+  const response = await axiosInstance.get("/media/mine");
+  return response.data;
+}
+
 export async function createVideoUpload(payload) {
   const response = await axiosInstance.post(
     "/media/uploads",
@@ -74,4 +79,21 @@ export async function completeVideoUpload(mediaId) {
   );
 
   return response.data;
+}
+
+
+export async function publishCreatorMedia(mediaId) {
+  const { data } = await axiosInstance.patch(
+    `/media/${mediaId}/publish`,
+  );
+
+  return data;
+}
+
+export async function unpublishCreatorMedia(mediaId) {
+  const { data } = await axiosInstance.patch(
+    `/media/${mediaId}/unpublish`,
+  );
+
+  return data;
 }

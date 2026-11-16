@@ -21,13 +21,8 @@ function createError(message, status = 400) {
 }
 
 function getVideoExtension(mimeType) {
-  if (mimeType === "video/mp4") {
-    return "mp4";
-  }
-
-  if (mimeType === "video/webm") {
-    return "webm";
-  }
+  if (mimeType === "video/mp4") return "mp4";
+  if (mimeType === "video/webm") return "webm";
 
   throw createError("Unsupported video format.");
 }
@@ -44,8 +39,16 @@ function formatMedia(media) {
     moderationStatus: media.moderationStatus,
     publicationStatus: media.publicationStatus,
     accessPolicy: media.accessPolicy,
+    priceKes: media.priceKes,
+    durationSeconds: media.durationSeconds,
+    width: media.width,
+    height: media.height,
+    processedSizeBytes: media.processedSizeBytes,
+    processingCompletedAt: media.processingCompletedAt,
+    rejectionReason: media.rejectionReason,
     createdAt: media.createdAt,
     uploadedAt: media.uploadedAt,
+    publishedAt: media.publishedAt,
   };
 }
 
@@ -83,10 +86,7 @@ async function requireEligibleCreator(user) {
   return profile;
 }
 
-export async function createVideoUpload({
-  user,
-  payload,
-}) {
+export async function createVideoUpload({ user, payload }) {
   const profile = await requireEligibleCreator(user);
 
   if (
@@ -104,22 +104,17 @@ export async function createVideoUpload({
   const media = await Media.create({
     creatorId: user._id,
     creatorProfileId: profile._id,
-
     title: payload.title,
     description: payload.description || "",
-
     mimeType: payload.mimeType,
     sizeBytes: payload.sizeBytes,
-
     storageKey: [
       "creators",
       String(user._id),
       "videos",
       `${randomUUID()}.${extension}`,
     ].join("/"),
-
     status: MEDIA_STATUSES.UPLOADING,
-
     uploadExpiresAt: new Date(
       Date.now() + UPLOAD_URL_LIFETIME_MS,
     ),
@@ -161,7 +156,6 @@ export async function completeVideoUpload({
     );
   }
 
-  // Make completion requests safely repeatable.
   if (media.status === MEDIA_STATUSES.PROCESSING) {
     return formatMedia(media);
   }
@@ -228,7 +222,6 @@ export async function completeVideoUpload({
   if (!validObject) {
     throw createError(
       "The uploaded video does not match the expected upload details.",
-      400,
     );
   }
 
@@ -266,6 +259,134 @@ export async function completeVideoUpload({
 
   throw createError(
     "The upload could not be completed. Please try again.",
+    409,
+  );
+}
+
+export async function getCreatorMedia({ userId }) {
+  const media = await Media.find({
+    creatorId: userId,
+  })
+    .sort({ createdAt: -1 })
+    .limit(100);
+
+  return media.map(formatMedia);
+}
+
+export async function publishCreatorMedia({
+  userId,
+  mediaId,
+}) {
+  const media = await Media.findOneAndUpdate(
+    {
+      _id: mediaId,
+      creatorId: userId,
+      mediaType: "VIDEO",
+      status: MEDIA_STATUSES.READY,
+      moderationStatus: "APPROVED",
+      publicationStatus: "DRAFT",
+    },
+    {
+      $set: {
+        publicationStatus: "PUBLISHED",
+        publishedAt: new Date(),
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+    },
+  );
+
+  if (media) {
+    return formatMedia(media);
+  }
+
+  const existingMedia = await Media.findOne({
+    _id: mediaId,
+    creatorId: userId,
+  });
+
+  if (!existingMedia) {
+    throw createError("Video was not found.", 404);
+  }
+
+  if (
+    existingMedia.status !== MEDIA_STATUSES.READY ||
+    existingMedia.moderationStatus !== "APPROVED"
+  ) {
+    throw createError(
+      "Only videos that are ready and approved by moderation can be published.",
+      409,
+    );
+  }
+
+  if (existingMedia.publicationStatus === "PUBLISHED") {
+    throw createError("This video is already published.", 409);
+  }
+
+  throw createError(
+    "This video cannot be published in its current state.",
+    409,
+  );
+}
+
+export async function unpublishCreatorMedia({
+  userId,
+  mediaId,
+}) {
+  const media = await Media.findOneAndUpdate(
+    {
+      _id: mediaId,
+      creatorId: userId,
+      mediaType: "VIDEO",
+      status: MEDIA_STATUSES.READY,
+      moderationStatus: "APPROVED",
+      publicationStatus: "PUBLISHED",
+    },
+    {
+      $set: {
+        publicationStatus: "DRAFT",
+      },
+      $unset: {
+        publishedAt: 1,
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+    },
+  );
+
+  if (media) {
+    return formatMedia(media);
+  }
+
+  const existingMedia = await Media.findOne({
+    _id: mediaId,
+    creatorId: userId,
+  });
+
+  if (!existingMedia) {
+    throw createError("Video was not found.", 404);
+  }
+
+  if (
+    existingMedia.status !== MEDIA_STATUSES.READY ||
+    existingMedia.moderationStatus !== "APPROVED"
+  ) {
+    throw createError(
+      "Only ready and approved videos can be unpublished.",
+      409,
+    );
+  }
+
+  if (existingMedia.publicationStatus === "DRAFT") {
+    throw createError("This video is already unpublished.", 409);
+  }
+
+  throw createError(
+    "This video cannot be unpublished in its current state.",
     409,
   );
 }

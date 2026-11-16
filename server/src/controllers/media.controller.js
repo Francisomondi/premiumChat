@@ -6,6 +6,9 @@ import {
 import {
   createVideoUpload,
   completeVideoUpload,
+  getCreatorMedia,
+  publishCreatorMedia,
+  unpublishCreatorMedia,
 } from "../services/media.service.js";
 
 function sendValidationError(res, error) {
@@ -58,6 +61,64 @@ export async function completeVideoUploadRequest(
     return res.status(200).json({
       success: true,
       message: "Video uploaded and queued for processing.",
+      media,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function getMyMedia(req, res, next) {
+  try {
+    const media = await getCreatorMedia({
+      userId: req.user._id,
+    });
+
+    return res.status(200).json({
+      success: true,
+      media,
+      count: media.length,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function publishCreatorMediaRequest(
+  req,
+  res,
+  next,
+) {
+  try {
+    const media = await publishCreatorMedia({
+      userId: req.user._id,
+      mediaId: req.params.mediaId,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Your video is now published.",
+      media,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function unpublishCreatorMediaRequest(
+  req,
+  res,
+  next,
+) {
+  try {
+    const media = await unpublishCreatorMedia({
+      userId: req.user._id,
+      mediaId: req.params.mediaId,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Your video has been unpublished.",
       media,
     });
   } catch (error) {

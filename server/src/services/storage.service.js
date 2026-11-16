@@ -183,3 +183,29 @@ export async function uploadPrivateFile({
     contentType,
   };
 }
+
+
+export async function createPrivateReadUrl({
+  storageKey,
+  expiresIn = 180,
+  contentType = "video/mp4",
+}) {
+  if (!storageKey) {
+    const error = new Error("Private storage key is required.");
+    error.status = 400;
+    throw error;
+  }
+
+  const { bucket } = getR2Config();
+
+  const command = new GetObjectCommand({
+    Bucket: bucket,
+    Key: storageKey,
+    ResponseContentType: contentType,
+    ResponseContentDisposition: "inline",
+  });
+
+  return getSignedUrl(getR2Client(), command, {
+    expiresIn,
+  });
+}
