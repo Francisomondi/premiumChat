@@ -11,6 +11,7 @@ import authRoutes from "./routes/auth.routes.js";
 import creatorRoutes from "./routes/creator.routes.js";
 import mediaRoutes from "./routes/media.routes.js";
 import mediaModerationRoutes from "./routes/mediaModeration.routes.js";
+import publicMediaRoutes from "./routes/publicMedia.routes.js";
 
 const app = express();
 
@@ -48,6 +49,10 @@ app.get("/", (req, res) => {
 app.use("/api/health", healthRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/creators", creatorRoutes);
+app.use("/api/media/admin/moderation", mediaModerationRoutes);
+app.use("/api/media", mediaRoutes);
+
+app.use("/api/public/videos", publicMediaRoutes);
 app.use("/api/media/admin/moderation", mediaModerationRoutes);
 app.use("/api/media", mediaRoutes);
 
