@@ -21,6 +21,9 @@ function formatCreatorProfile(profile) {
     displayName: profile.displayName,
     bio: profile.bio,
     country: profile.country,
+    subscriptionsEnabled: profile.subscriptionsEnabled ?? false,
+    monthlySubscriptionPriceKes:profile.monthlySubscriptionPriceKes ?? 0,
+    paidMediaEnabled: profile.paidMediaEnabled ?? false,
     applicationStatus: profile.applicationStatus,
     submittedAt: profile.submittedAt,
     reviewedAt: profile.reviewedAt,
@@ -126,6 +129,15 @@ export async function updateMyCreatorProfile(userId, payload) {
   }
 
   Object.assign(profile, payload);
+
+  if (
+    profile.subscriptionsEnabled &&
+    profile.monthlySubscriptionPriceKes < 1
+  ) {
+    throw createError(
+      "Set a monthly subscription price before enabling subscriptions.",
+    );
+  }
 
   await profile.save();
 

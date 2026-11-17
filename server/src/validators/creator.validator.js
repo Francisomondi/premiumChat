@@ -42,11 +42,23 @@ export const updateCreatorProfileSchema = z
     displayName: displayNameSchema.optional(),
     bio: bioSchema.optional(),
     country: countrySchema.optional(),
+
+    subscriptionsEnabled: z.boolean().optional(),
+
+    monthlySubscriptionPriceKes: z
+      .number()
+      .int()
+      .min(0)
+      .max(100000)
+      .optional(),
+
+    paidMediaEnabled: z.boolean().optional(),
   })
   .refine(
     (data) => Object.keys(data).length > 0,
     "Provide at least one profile field to update.",
   );
+  
 
 export const reviewCreatorApplicationSchema = z
   .object({

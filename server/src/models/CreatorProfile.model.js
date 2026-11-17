@@ -48,6 +48,26 @@ const creatorProfileSchema = new mongoose.Schema(
       maxlength: 80,
     },
 
+        subscriptionsEnabled: {
+      type: Boolean,
+      default: false,
+      required: true,
+    },
+
+    monthlySubscriptionPriceKes: {
+      type: Number,
+      min: 0,
+      max: 100000,
+      default: 0,
+      required: true,
+    },
+
+    paidMediaEnabled: {
+      type: Boolean,
+      default: false,
+      required: true,
+    },
+
     applicationStatus: {
       type: String,
       enum: Object.values(CREATOR_APPLICATION_STATUSES),
