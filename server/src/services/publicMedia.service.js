@@ -9,6 +9,11 @@ import CreatorProfile, {
   CREATOR_APPLICATION_STATUSES,
 } from "../models/CreatorProfile.model.js";
 
+import {
+  checkMediaPlaybackEntitlement,
+  MEDIA_ENTITLEMENT_REASONS,
+} from "./mediaEntitlement.service.js";
+
 import { USER_ROLES, USER_STATUSES } from "../models/User.model.js";
 
 import { createPrivateReadUrl } from "./storage.service.js";
@@ -119,26 +124,39 @@ function assertEligibleFan(user) {
   }
 }
 
-function assertFreePlayback(media) {
-  if (media.accessPolicy === "SUBSCRIBERS_ONLY") {
-    throw createHttpError(
-      403,
-      "This video is available to subscribers only.",
-    );
+async function assertMediaPlaybackEntitlement({
+  user,
+  media,
+}) {
+  const entitlement = await checkMediaPlaybackEntitlement({
+    fanId: user._id,
+    creatorId: media.creatorId,
+    mediaId: media._id,
+    accessPolicy: media.accessPolicy,
+  });
+
+  if (entitlement.allowed) {
+    return;
   }
 
-  if (media.accessPolicy === "PURCHASE_ONLY") {
-    throw createHttpError(
-      403,
-      "This video requires a purchase before it can be watched.",
-    );
-  }
+  switch (entitlement.reason) {
+    case MEDIA_ENTITLEMENT_REASONS.SUBSCRIPTION_REQUIRED:
+      throw createHttpError(
+        403,
+        "An active subscription to this creator is required to watch this video.",
+      );
 
-  if (media.accessPolicy !== "FREE") {
-    throw createHttpError(
-      403,
-      "This video's access policy does not allow playback.",
-    );
+    case MEDIA_ENTITLEMENT_REASONS.PURCHASE_REQUIRED:
+      throw createHttpError(
+        403,
+        "Purchase this video before watching it.",
+      );
+
+    default:
+      throw createHttpError(
+        403,
+        "You are not entitled to watch this video.",
+      );
   }
 }
 
@@ -327,7 +345,10 @@ export async function getPublicVideoPlayback({
     throw createHttpError(404, "This video is no longer available.");
   }
 
-  assertFreePlayback(media);
+    await assertMediaPlaybackEntitlement({
+    user,
+    media,
+  });
 
   if (!media.processedStorageKey) {
     throw createHttpError(
