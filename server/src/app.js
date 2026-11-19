@@ -16,6 +16,7 @@ import publicMediaRoutes from "./routes/publicMedia.routes.js";
 import subscriptionRoutes from "./routes/subscription.routes.js";
 import mediaPurchaseRoutes from "./routes/mediaPurchase.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
+import mpesaCallbackRoutes from "./routes/mpesaCallback.routes.js";
 
 const app = express();
 
@@ -61,6 +62,7 @@ app.use("/api/public/videos", publicMediaRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/media-purchases", mediaPurchaseRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/mpesa/callbacks", mpesaCallbackRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

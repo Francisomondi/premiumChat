@@ -45,6 +45,16 @@ function requireStkConfiguration() {
   }
 }
 
+function requireStkQueryConfiguration() {
+  requireDarajaCredentials();
+
+  if (!env.MPESA_SHORTCODE || !env.MPESA_PASSKEY) {
+    throw new Error(
+      "Daraja STK Query configuration is incomplete.",
+    );
+  }
+}
+
 function getNairobiTimestamp() {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Africa/Nairobi",
@@ -277,5 +287,140 @@ export async function initiateDarajaStkPush({
       error.code === "ETIMEDOUT";
 
     throw safeError;
+  }
+}
+
+
+export async function queryDarajaStkStatus({
+  checkoutRequestId,
+}) {
+  requireStkQueryConfiguration();
+
+  if (
+    typeof checkoutRequestId !== "string" ||
+    !checkoutRequestId.trim() ||
+    checkoutRequestId.trim().length > 128
+  ) {
+    const error = new Error(
+      "A valid CheckoutRequestID is required.",
+    );
+    error.code = "STK_QUERY_INVALID_REQUEST";
+    error.status = 400;
+    throw error;
+  }
+
+  const normalizedCheckoutRequestId =
+    checkoutRequestId.trim();
+
+  const timestamp = getNairobiTimestamp();
+
+  const password = createStkPassword({
+    shortcode: env.MPESA_SHORTCODE,
+    passkey: env.MPESA_PASSKEY,
+    timestamp,
+  });
+
+  let accessToken;
+
+  try {
+    accessToken = await getDarajaAccessToken();
+  } catch (cause) {
+    const error = new Error(
+      "Unable to authenticate before querying the STK transaction.",
+      { cause },
+    );
+
+    error.code = "STK_QUERY_UNAVAILABLE";
+    error.status = 503;
+    error.retryable = true;
+
+    throw error;
+  }
+
+  const payload = {
+    BusinessShortCode: env.MPESA_SHORTCODE,
+    Password: password,
+    Timestamp: timestamp,
+    CheckoutRequestID: normalizedCheckoutRequestId,
+  };
+
+  try {
+    const response = await darajaClient.post(
+      "/mpesa/stkpushquery/v1/query",
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    );
+
+    const data = response.data ?? {};
+
+    if (
+      data.CheckoutRequestID &&
+      data.CheckoutRequestID !== normalizedCheckoutRequestId
+    ) {
+      const error = new Error(
+        "Daraja returned a mismatched CheckoutRequestID.",
+      );
+
+      error.code = "STK_QUERY_IDENTIFIERS_MISMATCH";
+      error.status = 409;
+      error.retryable = false;
+
+      throw error;
+    }
+
+    return {
+      responseCode: data.ResponseCode ?? null,
+      responseDescription:
+        data.ResponseDescription ?? null,
+      merchantRequestId: data.MerchantRequestID ?? null,
+      checkoutRequestId: data.CheckoutRequestID ?? null,
+      resultCode:
+        data.ResultCode !== undefined &&
+        data.ResultCode !== null
+          ? String(data.ResultCode)
+          : null,
+      resultDescription: data.ResultDesc ?? null,
+    };
+  } catch (cause) {
+    if (
+      cause.code === "STK_QUERY_IDENTIFIERS_MISMATCH"
+    ) {
+      throw cause;
+    }
+
+    const providerStatus = cause.response?.status;
+    const providerCode =
+      cause.response?.data?.errorCode || null;
+
+    const retryable =
+      !cause.response ||
+      providerStatus === 408 ||
+      providerStatus === 425 ||
+      providerStatus === 429 ||
+      providerStatus >= 500 ||
+      cause.code === "ECONNABORTED" ||
+      cause.code === "ETIMEDOUT";
+
+    const error = new Error(
+      retryable
+        ? "Daraja STK Query is temporarily unavailable."
+        : "Daraja rejected the STK Query request.",
+      { cause },
+    );
+
+    error.code = retryable
+      ? "STK_QUERY_UNAVAILABLE"
+      : "STK_QUERY_REJECTED";
+
+    error.status = retryable ? 503 : 502;
+    error.retryable = retryable;
+    error.providerStatus = providerStatus || null;
+    error.providerCode = providerCode;
+
+    throw error;
   }
 }
