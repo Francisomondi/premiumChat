@@ -32,10 +32,11 @@ const mediaPurchaseSchema = new mongoose.Schema(
       index: true,
     },
 
-    amountKes: {
+      amountKes: {
       type: Number,
       required: true,
       min: 1,
+      immutable: true,
     },
 
     currency: {
@@ -68,6 +69,15 @@ const mediaPurchaseSchema = new mongoose.Schema(
       ref: "PaymentTransaction",
       default: null,
     },
+
+    clientRequestId: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 16,
+      maxlength: 100,
+      immutable: true,
+    },
   },
   {
     timestamps: true,
@@ -85,6 +95,10 @@ mediaPurchaseSchema.index({
   creatorId: 1,
   createdAt: -1,
 });
+mediaPurchaseSchema.index(
+  { fanId: 1, clientRequestId: 1 },
+  { unique: true },
+);
 
 const MediaPurchase = mongoose.model(
   "MediaPurchase",

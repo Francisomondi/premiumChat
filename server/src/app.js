@@ -1,3 +1,4 @@
+
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -12,6 +13,8 @@ import creatorRoutes from "./routes/creator.routes.js";
 import mediaRoutes from "./routes/media.routes.js";
 import mediaModerationRoutes from "./routes/mediaModeration.routes.js";
 import publicMediaRoutes from "./routes/publicMedia.routes.js";
+import subscriptionRoutes from "./routes/subscription.routes.js";
+import mediaPurchaseRoutes from "./routes/mediaPurchase.routes.js";
 
 const app = express();
 
@@ -49,12 +52,13 @@ app.get("/", (req, res) => {
 app.use("/api/health", healthRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/creators", creatorRoutes);
+
 app.use("/api/media/admin/moderation", mediaModerationRoutes);
 app.use("/api/media", mediaRoutes);
 
 app.use("/api/public/videos", publicMediaRoutes);
-app.use("/api/media/admin/moderation", mediaModerationRoutes);
-app.use("/api/media", mediaRoutes);
+app.use("/api/subscriptions", subscriptionRoutes);
+app.use("/api/media-purchases", mediaPurchaseRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

@@ -74,6 +74,14 @@ const creatorSubscriptionSchema = new mongoose.Schema(
       ref: "PaymentTransaction",
       default: null,
     },
+        clientRequestId: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 16,
+      maxlength: 100,
+      immutable: true,
+    },
   },
   {
     timestamps: true,
@@ -92,6 +100,11 @@ creatorSubscriptionSchema.index({
   creatorId: 1,
   createdAt: -1,
 });
+
+creatorSubscriptionSchema.index(
+  { fanId: 1, clientRequestId: 1 },
+  { unique: true },
+);
 
 const CreatorSubscription = mongoose.model(
   "CreatorSubscription",
