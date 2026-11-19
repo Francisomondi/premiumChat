@@ -19,19 +19,58 @@ const envSchema = z.object({
 
   BCRYPT_ROUNDS: z.coerce.number().int().min(10).max(14).default(12),
 
+  // Cloudflare R2
   R2_ACCOUNT_ID: z.string().optional(),
   R2_ACCESS_KEY_ID: z.string().optional(),
   R2_SECRET_ACCESS_KEY: z.string().optional(),
   R2_BUCKET_NAME: z.string().optional(),
+
+  // Safaricom Daraja / M-Pesa
+  MPESA_ENV: z
+    .enum(["sandbox", "production"])
+    .default("sandbox"),
+
+  MPESA_CONSUMER_KEY: z.string().optional(),
+  MPESA_CONSUMER_SECRET: z.string().optional(),
+  MPESA_SHORTCODE: z.string().optional(),
+  MPESA_PASSKEY: z.string().optional(),
+
+  MPESA_TRANSACTION_TYPE: z
+    .enum([
+      "CustomerPayBillOnline",
+      "CustomerBuyGoodsOnline",
+    ])
+    .default("CustomerPayBillOnline"),
+
+  MPESA_CALLBACK_URL: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().url().optional(),
+  ),
+
+  MPESA_ACCOUNT_REFERENCE: z
+    .string()
+    .min(1)
+    .max(12)
+    .default("PremiumChat"),
+
+  MPESA_TRANSACTION_DESC: z
+    .string()
+    .min(1)
+    .max(13)
+    .default("ContentPayment"),
+
+  MPESA_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(15000),
 });
 
 const result = envSchema.safeParse(process.env);
 
 if (!result.success) {
   console.error("Invalid environment configuration:");
-
   console.error(result.error.flatten().fieldErrors);
-
   process.exit(1);
 }
 

@@ -36,6 +36,8 @@ const creatorSubscriptionSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 1,
+      max: 100000,
+      immutable: true,
     },
 
     currency: {

@@ -15,6 +15,7 @@ import mediaModerationRoutes from "./routes/mediaModeration.routes.js";
 import publicMediaRoutes from "./routes/publicMedia.routes.js";
 import subscriptionRoutes from "./routes/subscription.routes.js";
 import mediaPurchaseRoutes from "./routes/mediaPurchase.routes.js";
+import paymentRoutes from "./routes/payment.routes.js";
 
 const app = express();
 
@@ -59,6 +60,7 @@ app.use("/api/media", mediaRoutes);
 app.use("/api/public/videos", publicMediaRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/media-purchases", mediaPurchaseRoutes);
+app.use("/api/payments", paymentRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
