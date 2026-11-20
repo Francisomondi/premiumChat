@@ -1,6 +1,7 @@
 
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+
 import useAuthStore from "../../store/useAuthStore";
 import {
   getCreatorApplications,
@@ -237,19 +238,19 @@ function AdminDashboard({ user, onLogout, isLoading }) {
     [filter],
   );
 
-    useEffect(() => {
+  useEffect(() => {
     let cancelled = false;
 
     Promise.resolve().then(() => {
-        if (!cancelled) {
+      if (!cancelled) {
         loadApplications(1, filter);
-        }
+      }
     });
 
     return () => {
-        cancelled = true;
+      cancelled = true;
     };
-    }, [filter, loadApplications]);
+  }, [filter, loadApplications]);
 
   async function handleApproval(application) {
     const applicant = getApplicant(application);
@@ -537,7 +538,12 @@ function AdminDashboard({ user, onLogout, isLoading }) {
                           </td>
 
                           <td className="px-6 py-5">
-                            <StatusBadge status={application.applicationStatus || application.status} />
+                            <StatusBadge
+                              status={
+                                application.applicationStatus ||
+                                application.status
+                              }
+                            />
                           </td>
 
                           {filter === "PENDING" && (
@@ -705,6 +711,60 @@ function AccountDashboard({ user, onLogout, isLoading }) {
           experience, video discovery and private conversations.
         </p>
 
+        {user?.role === "FAN" && (
+          <section className="mt-10 grid gap-4 sm:grid-cols-2">
+            <Link
+              to="/subscriptions"
+              className="group rounded-2xl border border-fuchsia-500/20 bg-gradient-to-br from-fuchsia-500/10 to-transparent p-6 transition hover:border-fuchsia-400/50 hover:bg-fuchsia-500/10"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-3xl">💎</span>
+                <span className="text-xl text-fuchsia-300 transition group-hover:translate-x-1">
+                  →
+                </span>
+              </div>
+
+              <h3 className="mt-5 text-lg font-bold">
+                My subscriptions
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-gray-400">
+                Manage your creator memberships, view subscription details
+                and check your M-Pesa payment history.
+              </p>
+
+              <span className="mt-5 inline-flex text-sm font-semibold text-fuchsia-300">
+                Manage subscriptions
+              </span>
+            </Link>
+
+            <Link
+              to="/explore"
+              className="group rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-white/25 hover:bg-white/[0.06]"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-3xl">🎬</span>
+                <span className="text-xl text-gray-300 transition group-hover:translate-x-1">
+                  →
+                </span>
+              </div>
+
+              <h3 className="mt-5 text-lg font-bold">
+                Discover creators
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-gray-400">
+                Explore creators, watch videos and discover content worth
+                following.
+              </p>
+
+              <span className="mt-5 inline-flex text-sm font-semibold text-gray-200">
+                Explore creators
+              </span>
+            </Link>
+          </section>
+        )}
+
         <section className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-xl border border-white/10 bg-white/[0.04] p-6">
             <p className="text-sm text-gray-500">Account role</p>
@@ -732,8 +792,8 @@ function AccountDashboard({ user, onLogout, isLoading }) {
           </h3>
 
           <p className="mt-2 text-sm leading-6 text-gray-400">
-            The next modules will introduce creator profiles, video discovery,
-            subscriptions, paid content and private messaging.
+            Discover creators, enjoy video content, subscribe to your
+            favourites and connect through private conversations.
           </p>
         </section>
       </div>

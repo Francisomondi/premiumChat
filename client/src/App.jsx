@@ -25,6 +25,7 @@ import CreatorProfilePage from "./features/creator/pages/CreatorProfilePage";
 import EditCreatorProfilePage from "./features/creator/pages/EditCreatorProfilePage";
 import CreatorContentPage from "./features/creator/pages/CreatorContentPage";
 import PublicCreatorProfilePage from "./features/creator/pages/PublicCreatorProfilePage";
+import MySubscriptionsPage from "./features/subscriptions/pages/MySubscriptionsPage";
 
 function App() {
   const initializeAuth = useAuthStore(
@@ -66,9 +67,15 @@ function App() {
         </Route>
 
         <Route
+          path="/subscriptions"
+          element={<MySubscriptionsPage />}
+        />
+
+        <Route
           path="/dashboard"
           element={<DashboardPage />}
         />
+
       </Route>
 
       <Route

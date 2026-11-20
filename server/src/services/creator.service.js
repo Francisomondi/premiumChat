@@ -199,6 +199,7 @@ export async function getPublicCreators({
   };
 }
 
+
 export async function getPublicCreatorByUsername(username) {
   const normalizedUsername = String(username || "")
     .trim()
@@ -223,14 +224,22 @@ export async function getPublicCreatorByUsername(username) {
   }
 
   return {
-    id: profile._id,
+    id: String(profile._id),
     username: profile.username,
     displayName: profile.displayName,
     bio: profile.bio,
     country: profile.country,
+
+    // Public monetization settings
+    subscriptionsEnabled: profile.subscriptionsEnabled ?? false,
+    monthlySubscriptionPriceKes:
+      profile.monthlySubscriptionPriceKes ?? 0,
+    paidMediaEnabled: profile.paidMediaEnabled ?? false,
+
     createdAt: profile.createdAt,
   };
 }
+
 
 export async function getCreatorApplications({
   page = 1,

@@ -15,6 +15,8 @@ const envSchema = z.object({
 
   MONGODB_URI: z.string().min(1),
 
+  JWT_ACCESS_SECRET: z.string().min(32),
+
   SESSION_DURATION_DAYS: z.coerce.number().int().positive().default(7),
 
   BCRYPT_ROUNDS: z.coerce.number().int().min(10).max(14).default(12),
