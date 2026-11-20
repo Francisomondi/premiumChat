@@ -5,6 +5,7 @@ import rateLimit from "express-rate-limit";
 import {
   initiateSubscriptionPaymentRequest,
   initiateMediaPurchasePaymentRequest,
+  getPaymentStatusRequest,
 } from "../controllers/payment.controller.js";
 
 import { requireAuth } from "../middleware/requireAuth.js";
@@ -24,6 +25,17 @@ const paymentLimiter = rateLimit({
   },
 });
 
+const paymentStatusLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 240,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many payment status requests. Please try again later.",
+  },
+});
+
 router.use(requireAuth, requireRole("FAN"));
 
 router.post(
@@ -38,6 +50,12 @@ router.post(
   requireTrustedOrigin,
   paymentLimiter,
   initiateMediaPurchasePaymentRequest,
+);
+
+router.get(
+  "/:paymentId/status",
+  paymentStatusLimiter,
+  getPaymentStatusRequest,
 );
 
 export default router;
